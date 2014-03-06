@@ -11,7 +11,7 @@ Why would I use this?
 ---------------------
 
 You may notice a delay on your site when you use a touchscreen. This is because nearly all touchscreen 
-devices have a 300ms delay between firing the `touchstart` event and firing the `click` event.
+devices have a [300ms delay][1] between firing the `touchstart` event and firing the `click` event.
 
 Use this patch to invoke your handler earlier, providing a great experience on touch devices.
 
@@ -26,6 +26,9 @@ Caveats
 * mobile-monkey will not patch handlers bound to `document`. Binding mobile-monkey to `document` prevents
   the user from scrolling with their touchscreen.
 
+* This is a monkey patch; a hack. Soon, Pointer events will be regularly consumable without 
+  [awkward polyfills][2] that require you to rewrite large portions of your site, and we 
+  can stop with this nonsense. 
 
 Usage
 -----
@@ -55,4 +58,8 @@ _[Visit the official Touch Punch website](http://touchpunch.furf.com)._
 mobile-monkey is a derivative work of jQuery UI Touch Punch and is dual licensed under
 the MIT and GPLv2 licenses.
 
-Original copyright: Copyright 2011–2014, Dave Furfero 
+Original copyright: Copyright 2011–2014, Dave Furfero
+ 
+ 
+[1]: http://blogs.telerik.com/appbuilder/posts/13-11-21/what-exactly-is.....-the-300ms-click-delay "What is the 300ms delay?"
+[2]: http://www.polymer-project.org/platform/pointer-events.html#touch-action
