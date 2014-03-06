@@ -62,4 +62,4 @@ Original copyright: Copyright 2011–2014, Dave Furfero
  
  
 [1]: http://blogs.telerik.com/appbuilder/posts/13-11-21/what-exactly-is.....-the-300ms-click-delay "What is the 300ms delay?"
-[2]: http://www.polymer-project.org/platform/pointer-events.html#touch-action
+[2]: http://www.polymer-project.org/platform/pointer-events.html#touch-action "A touch-action attribute... wat?"
