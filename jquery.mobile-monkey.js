@@ -1,12 +1,13 @@
 /*!
- * jQuery UI Touch Punch 0.2.3
+ * Mobile Monkey
+ *
+ * Based on jQuery UI Touch Punch 0.2.3
  *
  * Copyright 2011–2014, Dave Furfero
  * Dual licensed under the MIT or GPL Version 2 licenses.
- *
- * Depends:
- *  jquery.ui.widget.js
- *  jquery.ui.mouse.js
+ * 
+ * Modifications for generalized jQuery support by Tyler Sommer 
+ * https://github.com/tyler-sommer
  */
 (function ($) {
 
@@ -18,10 +19,12 @@
     return;
   }
 
-  var mouseProto = $.ui.mouse.prototype,
-      _mouseInit = mouseProto._mouseInit,
-      _mouseDestroy = mouseProto._mouseDestroy,
-      touchHandled;
+  var SimulatedMouse = function() {
+    this._touchMoved = false;
+  };
+  var mouseProto = SimulatedMouse.prototype,
+    touchHandled,
+    tracking = [];
 
   /**
    * Simulate a mouse event based on a corresponding touch event
@@ -35,11 +38,14 @@
       return;
     }
 
-    event.preventDefault();
+    if (event.type !== 'touchmove') {
+      // Preventing touchmove causes problems with scrolling on touchscreens
+      event.preventDefault();
+    }
 
     var touch = event.originalEvent.changedTouches[0],
-        simulatedEvent = document.createEvent('MouseEvents');
-    
+      simulatedEvent = document.createEvent('MouseEvents');
+
     // Initialize the simulated mouse event using the touch event's coordinates
     simulatedEvent.initMouseEvent(
       simulatedType,    // type
@@ -72,7 +78,7 @@
     var self = this;
 
     // Ignore the event if another widget is already being handled
-    if (touchHandled || !self._mouseCapture(event.originalEvent.changedTouches[0])) {
+    if (touchHandled) {
       return;
     }
 
@@ -139,42 +145,35 @@
   };
 
   /**
-   * A duck punch of the $.ui.mouse _mouseInit method to support touch events.
-   * This method extends the widget with bound touch event handlers that
-   * translate touch events to mouse events and pass them to the widget's
-   * original mouse event handling methods.
+   * Monkey patch for jQuery.on()
+   * 
+   * This method will only patch "click" events not bound to document
+   * and without any selector, so full delegation is not currently supported.
    */
-  mouseProto._mouseInit = function () {
-    
-    var self = this;
+  var jQueryOn = $.prototype.on;
+  $.prototype.on = function(types, handler) {
+    if (this.length > 0
+      && !this.is(document)
+      && handler instanceof Function
+      && types.indexOf('click') >= 0
+    ) {
+      var self = this;
 
-    // Delegate the touch handlers to the widget's element
-    self.element.bind({
-      touchstart: $.proxy(self, '_touchStart'),
-      touchmove: $.proxy(self, '_touchMove'),
-      touchend: $.proxy(self, '_touchEnd')
-    });
+      var mouse = new SimulatedMouse();
+      var filtered = this.filter(function(index) {
+        return tracking.indexOf(self[index]) < 0;
+      });
 
-    // Call the original $.ui.mouse init method
-    _mouseInit.call(self);
+      tracking = tracking.concat(filtered.toArray());
+
+      filtered.bind({
+        touchstart: $.proxy(mouse, '_touchStart'),
+        touchmove: $.proxy(mouse, '_touchMove'),
+        touchend: $.proxy(mouse, '_touchEnd')
+      });
+    }
+
+    return jQueryOn.apply(this, arguments);
   };
-
-  /**
-   * Remove the touch event handlers
-   */
-  mouseProto._mouseDestroy = function () {
-    
-    var self = this;
-
-    // Delegate the touch handlers to the widget's element
-    self.element.unbind({
-      touchstart: $.proxy(self, '_touchStart'),
-      touchmove: $.proxy(self, '_touchMove'),
-      touchend: $.proxy(self, '_touchEnd')
-    });
-
-    // Call the original $.ui.mouse destroy method
-    _mouseDestroy.call(self);
-  };
-
+  
 })(jQuery);
