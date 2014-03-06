@@ -4,14 +4,14 @@ mobile-monkey
 ### Touch event support for regular ol' jQuery
 
 mobile-monkey simulates mouse events on touchscreens in the same way jQuery UI Touch Punch does,
-only it patches jQuery's `.on` handler to provide a general patch for your entire application.
+only mobile-monkey patches jQuery's `.on` handler to provide a general patch for your entire application.
 
 
 Why would I use this?
 ---------------------
 
-You my notice a delay on your site when you use a touchscreen. This is because nearly all touchscreen 
-devices have a 300ms delay between the `touchstart` event and the `click` event.
+You may notice a delay on your site when you use a touchscreen. This is because nearly all touchscreen 
+devices have a 300ms delay between firing the `touchstart` event and firing the `click` event.
 
 Use this patch to invoke your handler earlier, providing a great experience on touch devices.
 
