@@ -23,8 +23,8 @@ Caveats
 
 * mobile-monkey currently only supports `click` events in non-delegation handlers. 
 
-* mobile-monkey will not patch handlers bound to `document`. Binding mobile-monkey to `document` prevents
-  the user from scrolling with their touchscreen.
+* mobile-monkey will not patch handlers bound to `document`, `html`, or `body`. Binding mobile-monkey 
+  to these elements prevents the user from scrolling with their touchscreen.
 
 * This is a monkey patch; a hack. Soon, Pointer events will be regularly consumable without 
   [awkward polyfills][2] that require you to rewrite large portions of your site, and we 
