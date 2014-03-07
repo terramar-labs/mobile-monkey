@@ -125,7 +125,18 @@
       return;
     }
 
-    if (event.type !== 'touchmove') {
+    // Ignore direct touches on inputs and text areas
+    if ($(event.target).is('input, textarea')) {
+      // TODO: This is necessary because the keyboard's appearance changes the screenX and Y.
+      // Could probably use some hack to get the position, or maybe trigger the touchstart after a short timeout
+      return;
+    }
+
+    // Do not prevent default on:
+    // touchstart -- this allows scrolling. If you intend to disallow touch scrolling when touching 
+    //               an element, you must bind a touchstart event and call event.preventDefault() yourself.
+    // touchmove  -- the first touchmove event is what transforms the event to a scroll.
+    if (event.type !== 'touchstart' && event.type !== 'touchmove') {
       event.preventDefault();
     }
 
@@ -251,33 +262,21 @@
       if (!elements instanceof jQuery) {
         elements = $(elements);
       }
-  
+
       var self = this;
       elements.each(function(index, element) {
         if (ignoredElements.indexOf(element) >= 0) {
           // continue
           return true;
         }
-        
+
         if (self._storage.increment(element) == 1) {
           console.log('Binding touch handlers for ', element);
-  
+
           $(element).bind({
             touchstart: $.proxy(_touchStart, self),
             touchmove: $.proxy(_touchMove, self),
             touchend: $.proxy(_touchEnd, self)
-          });
-
-          // Fix form elements
-          // TODO: This can be optimized
-          $(element).find('input, textarea').each(function(inde, ele) {
-            $(ele).on({
-              click: $.proxy(function(e) {
-                $(ele).on('touchstart', function () {
-                  $(this).focus();
-                }).trigger('touchstart');
-              }, $(ele))
-            });
           });
         }
       });

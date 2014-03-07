@@ -26,6 +26,10 @@ Caveats
 * mobile-monkey will not patch handlers bound to `document`, `html`, or `body`. Binding mobile-monkey 
   to these elements prevents the user from scrolling with their touchscreen.
 
+* mobile-monkey does not dispatch `click` when the original touch target is an `input` or `textarea`.
+  This is because by the time the click event has fired, the keyboard has appeared and the event x, y
+  coordinates are no longer correct. **This will hopefully be solved in the future**
+
 * This is a monkey patch; a hack. Soon, Pointer events will be regularly consumable without 
   [awkward polyfills][2] that require you to rewrite large portions of your site, and we 
   can stop with this nonsense. 
