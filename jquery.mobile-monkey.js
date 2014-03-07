@@ -9,7 +9,7 @@
  * Modifications for generalized jQuery support by Tyler Sommer 
  * https://github.com/tyler-sommer
  */
-(function ($, undefined) {
+(function ($, window, document, undefined) {
 
   // Detect touch support
   $.support.touch = 'ontouchend' in document;
@@ -18,8 +18,8 @@
   if (!$.support.touch) {
     return;
   }
-  
-  var console = console || { log: $.noop };
+
+  var console = window.console || { log: $.noop };
 
   var ignoredElements = [
     document,
@@ -31,7 +31,7 @@
     // have already been called by the time this is called.
     ignoredElements.push(document.body);
   });
-  
+
   /**
    * ObjectStore, supports objects as keys
    * @constructor
@@ -291,17 +291,17 @@
       if (!elements instanceof jQuery) {
         elements = $(elements);
       }
-  
+
       var self = this;
       elements.each(function(index, element) {
         if (ignoredElements.indexOf(element) >= 0) {
           // continue
           return true;
         }
-        
+
         if (self._storage.decrement(element) <= 0) {
           console.log('Removing touch handlers for ', element);
-  
+
           $(element).unbind({
             touchstart: $.proxy(_touchStart, self),
             touchmove: $.proxy(_touchMove, self),
@@ -312,7 +312,7 @@
     }
   };
 
-  
+
   var mouse = new SimulatedMouse();
   var jQueryOn = $.prototype.on;
   $.prototype.on = function(types, selector, data, handler) {
@@ -339,4 +339,4 @@
     return jQueryOff.apply(this, arguments);
   };
 
-})(jQuery);
+})(jQuery, this, this.document);
