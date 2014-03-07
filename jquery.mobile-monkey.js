@@ -21,6 +21,17 @@
   
   var console = console || { log: $.noop };
 
+  var ignoredElements = [
+    document,
+    document.firstChild.nextSibling
+  ];
+
+  $(function() {
+    // TODO: Is there a better way to get the body? It might be possible for jQuery.on() to
+    // have already been called by the time this is called.
+    ignoredElements.push(document.body);
+  });
+  
   /**
    * ObjectStore, supports objects as keys
    * @constructor
@@ -108,7 +119,7 @@
    * @param {Object} event A touch event
    * @param {String} simulatedType The corresponding mouse event
    */
-  var simulateMouseEvent = function(event, simulatedType) {
+  var _simulateMouseEvent = function(event, simulatedType) {
     // Ignore multi-touch events
     if (event.originalEvent.touches.length > 1) {
       return;
@@ -243,6 +254,11 @@
   
       var self = this;
       elements.each(function(index, element) {
+        if (ignoredElements.indexOf(element) >= 0) {
+          // continue
+          return true;
+        }
+        
         if (self._storage.increment(element) == 1) {
           console.log('Binding touch handlers for ', element);
   
@@ -250,6 +266,18 @@
             touchstart: $.proxy(_touchStart, self),
             touchmove: $.proxy(_touchMove, self),
             touchend: $.proxy(_touchEnd, self)
+          });
+
+          // Fix form elements
+          // TODO: This can be optimized
+          $(element).find('input, textarea').each(function(inde, ele) {
+            $(ele).on({
+              click: $.proxy(function(e) {
+                $(ele).on('touchstart', function () {
+                  $(this).focus();
+                }).trigger('touchstart');
+              }, $(ele))
+            });
           });
         }
       });
@@ -266,6 +294,11 @@
   
       var self = this;
       elements.each(function(index, element) {
+        if (ignoredElements.indexOf(element) >= 0) {
+          // continue
+          return true;
+        }
+        
         if (self._storage.decrement(element) <= 0) {
           console.log('Removing touch handlers for ', element);
   
@@ -285,7 +318,6 @@
   $.prototype.on = function(types, selector, data, handler) {
     if (this.length > 0
       && typeof(types) === 'string'
-      && !this.is(document)
       && (selector instanceof Function || ((data instanceof Function || handler instanceof Function) && !selector))
       && types.indexOf('click') === 0 // TODO: Allow more than only click events
     ) {
@@ -299,7 +331,6 @@
   $.prototype.off = function(types) {
     if (this.length > 0
       && typeof(types) === 'string'
-      && !this.is(document)
       && types.indexOf('click') === 0 // TODO: Allow more than only click events
     ) {
       mouse.unbind(this);
