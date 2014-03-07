@@ -21,18 +21,35 @@
   
   var console = console || { log: $.noop };
 
+  /**
+   * ObjectStore, supports objects as keys
+   * @constructor
+   */
   function ObjectStore() {
     this.keys = [];
     this.values = {};
   }
 
+  /**
+   * Public members
+   */
   ObjectStore.prototype = {
     constructor : ObjectStore,
 
+    /**
+     * Get a value
+     * @param key
+     * @returns {*}
+     */
     get: function (key) {
       return this.values[this.keys.indexOf(key)];
     },
-    
+
+    /**
+     * Set a value
+     * @param key
+     * @param value
+     */
     set: function (key, value) {
       var id = this.keys.indexOf(key);
       if (id < 0) {
@@ -42,6 +59,12 @@
       this.values[id] = value;
     },
 
+    /**
+     * Increment a key
+     * @param key
+     * @param inc
+     * @returns {*}
+     */
     increment: function (key, inc) {
       inc = inc || 1;
       var value = (this.get(key) || 0) + inc;
@@ -51,6 +74,12 @@
       return value;
     },
 
+    /**
+     * Decrement a key
+     * @param key
+     * @param dec
+     * @returns {number}
+     */
     decrement: function (key, dec) {
       dec = dec || 1;
       var value = (this.get(key) || 0) - dec;
@@ -64,57 +93,22 @@
     }
   };
 
-  var SimulatedMouse = function() {
-    this._touchMoved = false;
-  };
-  var mouseProto = SimulatedMouse.prototype,
-    touchHandled,
-    tracking = new ObjectStore();
-
-  mouseProto.bind = function(elements) {
-    if (!elements instanceof jQuery) {
-      elements = $(elements);
-    }
-
-    var self = this;
-    elements.each(function(index, element) {
-      if (tracking.increment(element) == 1) {
-        console.log('Binding touch handlers for ', element);
-
-        $(element).bind({
-          touchstart: $.proxy(self, '_touchStart'),
-          touchmove: $.proxy(self, '_touchMove'),
-          touchend: $.proxy(self, '_touchEnd')
-        });
-      }
-    });
-  };
-
-  mouseProto.unbind = function(elements) {
-    if (!elements instanceof jQuery) {
-      elements = $(elements);
-    }
-
-    var self = this;
-    elements.each(function(index, element) {
-      if (tracking.decrement(element) <= 0) {
-        console.log('Removing touch handlers for ', element);
-
-        $(element).unbind({
-          touchstart: $.proxy(self, '_touchStart'),
-          touchmove: $.proxy(self, '_touchMove'),
-          touchend: $.proxy(self, '_touchEnd')
-        });
-      }
-    });
-  };
+  /**
+   * A simulated mouse that listens for touch events and fires mouse events
+   * @constructor
+   */
+  function SimulatedMouse() {
+    this._touchMoved   = false;
+    this._storage      = new ObjectStore();
+    this._touchHandled = false;
+  }
 
   /**
    * Simulate a mouse event based on a corresponding touch event
    * @param {Object} event A touch event
    * @param {String} simulatedType The corresponding mouse event
    */
-  mouseProto.simulateMouseEvent = function(event, simulatedType) {
+  var simulateMouseEvent = function(event, simulatedType) {
     // Ignore multi-touch events
     if (event.originalEvent.touches.length > 1) {
       return;
@@ -156,41 +150,41 @@
    * Handle the jQuery UI widget's touchstart events
    * @param {Object} event The widget element's touchstart event
    */
-  mouseProto._touchStart = function (event) {
+  var _touchStart = function (event) {
 
     var self = this;
 
     // Ignore the event if another widget is already being handled
-    if (touchHandled) {
+    if (self._touchHandled) {
       return;
     }
 
     // Set the flag to prevent other widgets from inheriting the touch event
-    touchHandled = true;
+    self._touchHandled = true;
 
     // Track movement to determine if interaction was a click
     self._touchMoved = false;
 
     // Simulate the mouseover event
-    self.simulateMouseEvent(event, 'mouseover');
+    _simulateMouseEvent(event, 'mouseover');
 
     // Simulate the mousemove event
-    self.simulateMouseEvent(event, 'mousemove');
+    _simulateMouseEvent(event, 'mousemove');
 
     // Simulate the mousedown event
-    self.simulateMouseEvent(event, 'mousedown');
+    _simulateMouseEvent(event, 'mousedown');
   };
 
   /**
    * Handle the jQuery UI widget's touchmove events
    * @param {Object} event The document's touchmove event
    */
-  mouseProto._touchMove = function (event) {
+  var _touchMove = function (event) {
 
     var self = this;
 
     // Ignore event if not handled
-    if (!touchHandled) {
+    if (!self._touchHandled) {
       return;
     }
 
@@ -198,41 +192,95 @@
     self._touchMoved = true;
 
     // Simulate the mousemove event
-    self.simulateMouseEvent(event, 'mousemove');
+    _simulateMouseEvent(event, 'mousemove');
   };
 
   /**
    * Handle the jQuery UI widget's touchend events
    * @param {Object} event The document's touchend event
    */
-  mouseProto._touchEnd = function (event) {
+  var _touchEnd = function (event) {
 
     var self = this;
 
     // Ignore event if not handled
-    if (!touchHandled) {
+    if (!self._touchHandled) {
       return;
     }
 
     // Simulate the mouseup event
-    self.simulateMouseEvent(event, 'mouseup');
+    _simulateMouseEvent(event, 'mouseup');
 
     // Simulate the mouseout event
-    self.simulateMouseEvent(event, 'mouseout');
+    _simulateMouseEvent(event, 'mouseout');
 
     // If the touch interaction did not move, it should trigger a click
     if (!self._touchMoved) {
 
       // Simulate the click event
-      self.simulateMouseEvent(event, 'click');
+      _simulateMouseEvent(event, 'click');
     }
 
     // Unset the flag to allow other widgets to inherit the touch event
-    touchHandled = false;
+    self._touchHandled = false;
   };
 
-  var mouse = new SimulatedMouse();
+  /**
+   * Public interface for SimulatedMouse
+   * @type {{constructor: SimulatedMouse, bind: bind, unbind: unbind}}
+   */
+  SimulatedMouse.prototype = {
+    constructor: SimulatedMouse,
 
+    /**
+     * Bind elements to this SimulatedMouse
+     * @param elements
+     */
+    bind: function(elements) {
+      if (!elements instanceof jQuery) {
+        elements = $(elements);
+      }
+  
+      var self = this;
+      elements.each(function(index, element) {
+        if (self._storage.increment(element) == 1) {
+          console.log('Binding touch handlers for ', element);
+  
+          $(element).bind({
+            touchstart: $.proxy(_touchStart, self),
+            touchmove: $.proxy(_touchMove, self),
+            touchend: $.proxy(_touchEnd, self)
+          });
+        }
+      });
+    },
+
+    /**
+     * Unbind elements from this SimulatedMouse
+     * @param elements
+     */
+    unbind: function(elements) {
+      if (!elements instanceof jQuery) {
+        elements = $(elements);
+      }
+  
+      var self = this;
+      elements.each(function(index, element) {
+        if (self._storage.decrement(element) <= 0) {
+          console.log('Removing touch handlers for ', element);
+  
+          $(element).unbind({
+            touchstart: $.proxy(_touchStart, self),
+            touchmove: $.proxy(_touchMove, self),
+            touchend: $.proxy(_touchEnd, self)
+          });
+        }
+      });
+    }
+  };
+
+  
+  var mouse = new SimulatedMouse();
   var jQueryOn = $.prototype.on;
   $.prototype.on = function(types, selector, data, handler) {
     if (this.length > 0
